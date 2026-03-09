@@ -44,8 +44,7 @@
             android:layout_width="60dp"
             android:layout_height="60dp"
             android:layout_marginTop="12dp"
-            android:src="@drawable/ic_launcher_foreground"
-            app:tint="#EF4444"
+            android:src="@drawable/red_eye_disconnect"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -76,8 +75,8 @@
 
                 <ImageView
                     android:id="@+id/imgConnStatus"
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
+                    android:layout_width="13dp"
+                    android:layout_height="11dp"
                     android:background="@drawable/ic_launcher_background"
                     android:backgroundTint="#EF4444" />
 

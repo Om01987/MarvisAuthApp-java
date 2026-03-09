@@ -156,7 +156,6 @@ public class MainActivity extends AppCompatActivity implements MarvisAuth_Callba
                 return;
             }
             startActivity(new Intent(MainActivity.this, MatchActivity.class));
-            // Toast.makeText(this, "Navigating to Matching...", Toast.LENGTH_SHORT).show();
         });
 
         btnShowUsers.setOnClickListener(v -> {
@@ -209,15 +208,29 @@ public class MainActivity extends AppCompatActivity implements MarvisAuth_Callba
 
     private void setUIConnected(boolean connected, String deviceName) {
         if (connected) {
-            imgConnStatus.setImageResource(R.drawable.connect_1);
+            // 1. Keep the small status indicator as a solid GREEN square
+            imgConnStatus.setImageDrawable(null);
+            imgConnStatus.setBackgroundResource(R.drawable.ic_launcher_background);
+            imgConnStatus.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#22C55E")));
+
             txtConnectionStatus.setText("Connected (" + deviceName + ")");
             txtConnectionStatus.setTextColor(Color.parseColor("#22C55E")); // Green
-            imgHeaderStatus.setColorFilter(Color.parseColor("#22C55E"));
+
+            // 2. Put the dynamic eye image in the top right Header
+            imgHeaderStatus.setImageResource(R.drawable.green_eye_connect);
+            imgHeaderStatus.clearColorFilter(); // Remove any leftover tint
         } else {
-            imgConnStatus.setImageResource(R.drawable.disconnect_1);
+            // 1. Keep the small status indicator as a solid RED square
+            imgConnStatus.setImageDrawable(null);
+            imgConnStatus.setBackgroundResource(R.drawable.ic_launcher_background);
+            imgConnStatus.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#EF4444")));
+
             txtConnectionStatus.setText("Disconnected");
             txtConnectionStatus.setTextColor(Color.parseColor("#EF4444")); // Red
-            imgHeaderStatus.setColorFilter(Color.parseColor("#EF4444"));
+
+            // 2. Put the dynamic eye image in the top right Header
+            imgHeaderStatus.setImageResource(R.drawable.red_eye_disconnect);
+            imgHeaderStatus.clearColorFilter(); // Remove any leftover tint
         }
 
         cardCapture.setAlpha(connected && bioManager.isReady() ? 1.0f : 0.6f);
