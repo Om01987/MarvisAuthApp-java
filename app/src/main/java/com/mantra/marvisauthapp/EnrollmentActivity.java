@@ -26,8 +26,8 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
 
     private EditText edtUserName;
     private ImageView imgLeftEye, imgRightEye;
-    private TextView txtEnrollStatus;
-    private Button btnStopCapture, btnSaveUser;
+    private TextView txtEnrollStatus, txtLeftQuality, txtRightQuality;
+    private Button btnStopCapture, btnSaveUser, btnReset;
 
     private boolean isCapturing = false;
     private int currentEye = -1; // 0 for Left, 1 for Right
@@ -47,9 +47,12 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
         edtUserName = findViewById(R.id.edtUserName);
         imgLeftEye = findViewById(R.id.imgLeftEye);
         imgRightEye = findViewById(R.id.imgRightEye);
+        txtLeftQuality = findViewById(R.id.txtLeftQuality);
+        txtRightQuality = findViewById(R.id.txtRightQuality);
         txtEnrollStatus = findViewById(R.id.txtEnrollStatus);
         btnStopCapture = findViewById(R.id.btnStopCapture);
         btnSaveUser = findViewById(R.id.btnSaveUser);
+        btnReset = findViewById(R.id.btnReset);
 
         // Setup Paint for drawing Iris Anatomy circle
         paint = new Paint();
@@ -62,12 +65,20 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
 
         btnStopCapture.setOnClickListener(v -> {
             if (isCapturing) {
-                bioManager.getSDK().StopCapture();
+                // Instantly block any lingering frames from OnPreview
                 isCapturing = false;
-                updateStatus("Capture stopped manually", Color.RED);
+
+                bioManager.getSDK().StopCapture();
+                updateStatus("Capture stopped manually.", Color.RED);
+                revertImageToDefault();
                 resetUIState();
+
+                // Unassign current eye so it's fully reset
+                currentEye = -1;
             }
         });
+
+        btnReset.setOnClickListener(v -> performReset());
 
         btnSaveUser.setOnClickListener(v -> saveUserToDb());
     }
@@ -82,8 +93,8 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
     protected void onPause() {
         super.onPause();
         if (isCapturing) {
-            bioManager.getSDK().StopCapture();
             isCapturing = false;
+            bioManager.getSDK().StopCapture();
         }
         bioManager.removeListener();
     }
@@ -100,11 +111,16 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
         imgLeftEye.setEnabled(false);
         imgRightEye.setEnabled(false);
         btnStopCapture.setEnabled(true);
-        btnSaveUser.setEnabled(false);
 
-        // Reset the active ImageView to a neutral color during preview
-        if (currentEye == 0) imgLeftEye.setBackgroundColor(Color.parseColor("#E2E8F0"));
-        if (currentEye == 1) imgRightEye.setBackgroundColor(Color.parseColor("#E2E8F0"));
+        // Reset the active ImageView to a neutral color and remove old text during preview
+        if (currentEye == 0) {
+            imgLeftEye.setBackgroundColor(Color.parseColor("#E2E8F0"));
+            txtLeftQuality.setText("");
+        }
+        if (currentEye == 1) {
+            imgRightEye.setBackgroundColor(Color.parseColor("#E2E8F0"));
+            txtRightQuality.setText("");
+        }
 
         updateStatus((eyePosition == 0 ? "LEFT" : "RIGHT") + " EYE: Place eye on scanner...", Color.BLUE);
 
@@ -112,12 +128,17 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
         if (ret != 0) {
             isCapturing = false;
             updateStatus("Capture Failed to Start: " + ret, Color.RED);
+            revertImageToDefault();
             resetUIState();
+            currentEye = -1;
         }
     }
 
     @Override
     public void OnPreview(int errorCode, int quality, byte[] image, IrisAnatomy anatomy) {
+        // CRITICAL FIX: Ignore lingering frames if user clicked Stop
+        if (!isCapturing) return;
+
         if (errorCode == 0 && image != null) {
             if (quality < 40) paint.setColor(Color.RED);
             else if (quality < 60) paint.setColor(Color.YELLOW);
@@ -145,13 +166,43 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
 
     @Override
     public void OnComplete(int errorCode, int quality, byte[] image, IrisAnatomy anatomy) {
+        // CRITICAL FIX: Ignore callbacks if user manually aborted
+        if (!isCapturing) return;
+
         isCapturing = false;
+
         if (errorCode == 0) {
-            updateStatus("Capture Success! Quality: " + quality, Color.GREEN);
+            updateStatus("Capture Success! Quality: " + quality, Color.parseColor("#22C55E"));
+
+            if (image != null) {
+                Bitmap bitmap = BitmapFactory.decodeByteArray(image, 0, image.length);
+                Bitmap mutableBitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+                Canvas canvas = new Canvas(mutableBitmap);
+
+                if (anatomy != null && anatomy.irisR > 0) {
+                    paint.setColor(Color.GREEN);
+                    canvas.drawCircle(anatomy.irisX, anatomy.irisY, anatomy.irisR, paint);
+                }
+
+                runOnUiThread(() -> {
+                    if (currentEye == 0) {
+                        imgLeftEye.setImageBitmap(mutableBitmap);
+                        imgLeftEye.setBackgroundColor(Color.parseColor("#22C55E")); // Green border
+                        txtLeftQuality.setText("Quality: " + quality);
+                    } else if (currentEye == 1) {
+                        imgRightEye.setImageBitmap(mutableBitmap);
+                        imgRightEye.setBackgroundColor(Color.parseColor("#22C55E")); // Green border
+                        txtRightQuality.setText("Quality: " + quality);
+                    }
+                });
+            }
+
             extractImagesFromSDK();
         } else {
             updateStatus("Capture Failed or Timeout: " + bioManager.getSDK().GetErrorMessage(errorCode), Color.RED);
+            revertImageToDefault();
             resetUIState();
+            currentEye = -1;
         }
     }
 
@@ -160,10 +211,12 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
             try {
                 int expectedSize = bioManager.getLastDeviceInfo().Width * bioManager.getLastDeviceInfo().Height + 1078;
 
+                // Fetch raw BMP for UI/DB
                 byte[] bmpBytes = new byte[expectedSize];
                 int[] bmpLen = new int[1];
                 bioManager.getSDK().GetImage(bmpBytes, bmpLen, 0, ImageFormat.BMP);
 
+                // Fetch ISO template for Matching
                 byte[] isoBytes = new byte[expectedSize];
                 int[] isoLen = new int[1];
                 bioManager.getSDK().GetImage(isoBytes, isoLen, 10, ImageFormat.IIR_K1);
@@ -182,39 +235,76 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
                     rightImgIso = finalIso;
                 }
 
-                runOnUiThread(() -> {
-                    Bitmap bmp = BitmapFactory.decodeByteArray(finalBmp, 0, finalBmp.length);
-
-                    if (currentEye == 0) {
-                        imgLeftEye.setImageBitmap(bmp);
-                        imgLeftEye.setBackgroundColor(Color.parseColor("#22C55E")); // Green border
-                    } else if (currentEye == 1) {
-                        imgRightEye.setImageBitmap(bmp);
-                        imgRightEye.setBackgroundColor(Color.parseColor("#22C55E")); // Green border
-                    }
-
-                    resetUIState();
-                    btnSaveUser.setEnabled(leftImgIso != null || rightImgIso != null);
-                });
+                runOnUiThread(this::resetUIState);
 
             } catch (Exception e) {
                 e.printStackTrace();
-                runOnUiThread(() -> updateStatus("Error extracting image data", Color.RED));
-                resetUIState();
+                runOnUiThread(() -> {
+                    updateStatus("Error extracting image data", Color.RED);
+                    revertImageToDefault();
+                    resetUIState();
+                });
             }
         }).start();
     }
 
+    private void revertImageToDefault() {
+        runOnUiThread(() -> {
+            if (currentEye == 0) {
+                imgLeftEye.setImageResource(R.drawable.logo);
+                imgLeftEye.setBackgroundColor(Color.parseColor("#E2E8F0"));
+                txtLeftQuality.setText("");
+            } else if (currentEye == 1) {
+                imgRightEye.setImageResource(R.drawable.logo);
+                imgRightEye.setBackgroundColor(Color.parseColor("#E2E8F0"));
+                txtRightQuality.setText("");
+            }
+        });
+    }
+
+    private void performReset() {
+        if (isCapturing) {
+            isCapturing = false;
+            bioManager.getSDK().StopCapture();
+        }
+
+        edtUserName.setText("");
+
+        // Reset Left Eye UI and Data
+        imgLeftEye.setImageResource(R.drawable.logo);
+        imgLeftEye.setBackgroundColor(Color.parseColor("#E2E8F0"));
+        txtLeftQuality.setText("");
+        leftImgBmp = null;
+        leftImgIso = null;
+
+        // Reset Right Eye UI and Data
+        imgRightEye.setImageResource(R.drawable.logo);
+        imgRightEye.setBackgroundColor(Color.parseColor("#E2E8F0"));
+        txtRightQuality.setText("");
+        rightImgBmp = null;
+        rightImgIso = null;
+
+        currentEye = -1;
+        updateStatus("Tap on an Eye Image above to start capturing.", Color.parseColor("#334155"));
+        resetUIState();
+    }
+
     private void saveUserToDb() {
         String name = edtUserName.getText().toString().trim();
+
         if (name.isEmpty()) {
             Toast.makeText(this, "Please enter a user name", Toast.LENGTH_SHORT).show();
             return;
         }
 
+        if (leftImgIso == null && rightImgIso == null) {
+            Toast.makeText(this, "Please capture at least one eye", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         long id = dbHelper.insertUser(name, leftImgBmp, leftImgIso, rightImgBmp, rightImgIso);
         if (id != -1) {
-            Toast.makeText(this, "User Enrolled Successfully! ID: " + id, Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "User Enrolled Successfully!", Toast.LENGTH_LONG).show();
             finish();
         } else {
             Toast.makeText(this, "Database Error", Toast.LENGTH_SHORT).show();
@@ -226,7 +316,6 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
             imgLeftEye.setEnabled(true);
             imgRightEye.setEnabled(true);
             btnStopCapture.setEnabled(false);
-            btnSaveUser.setEnabled(leftImgIso != null || rightImgIso != null);
         });
     }
 
@@ -242,10 +331,10 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
         if (detection == DeviceDetection.DISCONNECTED) {
             runOnUiThread(() -> Toast.makeText(this, "Device Disconnected", Toast.LENGTH_SHORT).show());
             if (isCapturing) {
-                bioManager.getSDK().StopCapture();
                 isCapturing = false;
+                bioManager.getSDK().StopCapture();
             }
-            finish(); // Kick back to Dashboard
+            finish();
         }
     }
 }
