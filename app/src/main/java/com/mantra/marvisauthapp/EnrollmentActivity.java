@@ -240,8 +240,12 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
     @Override
     public void OnDeviceDetection(String deviceName, DeviceDetection detection) {
         if (detection == DeviceDetection.DISCONNECTED) {
-            isCapturing = false;
-            finish();
+            runOnUiThread(() -> Toast.makeText(this, "Device Disconnected", Toast.LENGTH_SHORT).show());
+            if (isCapturing) {
+                bioManager.getSDK().StopCapture();
+                isCapturing = false;
+            }
+            finish(); // Kick back to Dashboard
         }
     }
 }

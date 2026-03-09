@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="#F8FAFC"
+    android:gravity="center_horizontal">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Continuous 1:N Matching"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="#1E293B"
+        android:layout_marginBottom="24dp"/>
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="4dp"
+        android:layout_marginBottom="24dp">
+
+        <ImageView
+            android:id="@+id/imgMatchPreview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#E2E8F0"
+            android:scaleType="fitCenter"
+            android:src="@drawable/logo"
+            android:padding="16dp"/>
+    </androidx.cardview.widget.CardView>
+
+    <TextView
+        android:id="@+id/txtMatchStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Initializing Scanner..."
+        android:textAlignment="center"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#334155"
+        android:layout_marginBottom="32dp"/>
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
+
+    <Button
+        android:id="@+id/btnStopMatching"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:text="Stop Matching"
+        android:backgroundTint="#E11D48"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"/>
+
+</LinearLayout>

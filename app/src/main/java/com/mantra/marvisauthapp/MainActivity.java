@@ -155,8 +155,8 @@ public class MainActivity extends AppCompatActivity implements MarvisAuth_Callba
                 Toast.makeText(this, "Please init device first", Toast.LENGTH_SHORT).show();
                 return;
             }
-            // startActivity(new Intent(MainActivity.this, MatchActivity.class));
-            Toast.makeText(this, "Navigating to Matching...", Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(MainActivity.this, MatchActivity.class));
+            // Toast.makeText(this, "Navigating to Matching...", Toast.LENGTH_SHORT).show();
         });
 
         btnShowUsers.setOnClickListener(v -> {
