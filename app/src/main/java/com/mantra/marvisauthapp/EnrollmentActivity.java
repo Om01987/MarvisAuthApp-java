@@ -70,7 +70,7 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
 
                 bioManager.getSDK().StopCapture();
                 updateStatus("Capture stopped manually.", Color.RED);
-                revertImageToDefault();
+                revertImageToDefault(currentEye); // Pass the current eye before resetting it
                 resetUIState();
 
                 // Unassign current eye so it's fully reset
@@ -128,7 +128,7 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
         if (ret != 0) {
             isCapturing = false;
             updateStatus("Capture Failed to Start: " + ret, Color.RED);
-            revertImageToDefault();
+            revertImageToDefault(currentEye); // Pass eye index
             resetUIState();
             currentEye = -1;
         }
@@ -200,13 +200,15 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
             extractImagesFromSDK();
         } else {
             updateStatus("Capture Failed or Timeout: " + bioManager.getSDK().GetErrorMessage(errorCode), Color.RED);
-            revertImageToDefault();
+            revertImageToDefault(currentEye); // Correctly revert the current eye image
             resetUIState();
-            currentEye = -1;
+            currentEye = -1; // Safely set to -1 AFTER revertImageToDefault captures the value
         }
     }
 
     private void extractImagesFromSDK() {
+        final int activeEye = currentEye; // Capture current eye locally for the thread
+
         new Thread(() -> {
             try {
                 int expectedSize = bioManager.getLastDeviceInfo().Width * bioManager.getLastDeviceInfo().Height + 1078;
@@ -227,7 +229,7 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
                 byte[] finalIso = new byte[isoLen[0]];
                 System.arraycopy(isoBytes, 0, finalIso, 0, isoLen[0]);
 
-                if (currentEye == 0) {
+                if (activeEye == 0) {
                     leftImgBmp = finalBmp;
                     leftImgIso = finalIso;
                 } else {
@@ -241,20 +243,21 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
                 e.printStackTrace();
                 runOnUiThread(() -> {
                     updateStatus("Error extracting image data", Color.RED);
-                    revertImageToDefault();
+                    revertImageToDefault(activeEye); // Use captured eye index
                     resetUIState();
                 });
             }
         }).start();
     }
 
-    private void revertImageToDefault() {
+    // MODIFIED: Added eyeToRevert parameter to prevent race condition with currentEye = -1
+    private void revertImageToDefault(int eyeToRevert) {
         runOnUiThread(() -> {
-            if (currentEye == 0) {
+            if (eyeToRevert == 0) {
                 imgLeftEye.setImageResource(R.drawable.logo);
                 imgLeftEye.setBackgroundColor(Color.parseColor("#E2E8F0"));
                 txtLeftQuality.setText("");
-            } else if (currentEye == 1) {
+            } else if (eyeToRevert == 1) {
                 imgRightEye.setImageResource(R.drawable.logo);
                 imgRightEye.setBackgroundColor(Color.parseColor("#E2E8F0"));
                 txtRightQuality.setText("");
