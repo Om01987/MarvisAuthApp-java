@@ -210,12 +210,12 @@ public class MatchActivity extends AppCompatActivity implements MarvisAuth_Callb
 
     private int perform1to1Match(byte[] liveBmpImage, byte[] storedBmpImage) {
         try {
-            // TODO: Use Android Studio Autocomplete here!
-            // Type "bioManager.getSDK()." and look for the match function.
-            // Example: return bioManager.getSDK().MatchIris(liveBmpImage, storedBmpImage);
+            // TODO: Use Matching 1:1 function from MarvisAuth SDk.
+
+            // return bioManager.getSDK().MatchIris(liveBmpImage, storedBmpImage);
 
 
-            return 0; // Return 0 score until you find and uncomment the real function
+            return 0; // Return 0 score until i find and uncomment the real function
         } catch (Exception e) {
             e.printStackTrace();
             return 0;
