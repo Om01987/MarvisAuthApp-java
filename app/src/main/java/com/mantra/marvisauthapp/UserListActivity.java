@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -115,6 +116,10 @@ public class UserListActivity extends AppCompatActivity {
                 .setMessage("Are you sure you want to delete '" + user.name + "'? This action cannot be undone.")
                 .setPositiveButton("DELETE", (dialog, which) -> {
                     if (dbHelper.deleteUser(user.id)) {
+
+                        // Delete the local files associated with this user
+                        deleteUserFilesLocally(user.id);
+
                         Toast.makeText(this, "User deleted", Toast.LENGTH_SHORT).show();
                         loadUsers(); // Refresh list
                     } else {
@@ -123,5 +128,24 @@ public class UserListActivity extends AppCompatActivity {
                 })
                 .setNegativeButton("CANCEL", null)
                 .show();
+    }
+
+    // Helper method to remove the user's specific image directory
+    private void deleteUserFilesLocally(long userId) {
+        File baseDirectory = new File(getExternalFilesDir(null), "MarvisUsers");
+        File userDirectory = new File(baseDirectory, "user_" + userId);
+
+        if (userDirectory.exists() && userDirectory.isDirectory()) {
+            // In Java, a directory must be empty before it can be deleted.
+            // Loop through and delete the left/right .bmp files first.
+            File[] files = userDirectory.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    file.delete();
+                }
+            }
+            // Now delete the empty user directory
+            userDirectory.delete();
+        }
     }
 }

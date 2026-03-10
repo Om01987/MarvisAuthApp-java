@@ -21,6 +21,8 @@ import com.mantra.marvisauth.MarvisAuth_Callback;
 import com.mantra.marvisauth.enums.DeviceDetection;
 import com.mantra.marvisauth.enums.DeviceModel;
 
+import java.io.File;
+
 public class MainActivity extends AppCompatActivity implements MarvisAuth_Callback {
 
     private CardView cardCapture, cardMatch;
@@ -31,6 +33,8 @@ public class MainActivity extends AppCompatActivity implements MarvisAuth_Callba
     private BiometricManager bioManager;
     private IrisDatabaseHelper dbHelper;
     private DeviceModel pendingModel;
+
+    private int selectedDeleteOption = 0; // Tracks dialog selection
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,7 +70,6 @@ public class MainActivity extends AppCompatActivity implements MarvisAuth_Callba
         txtBottomMessage = findViewById(R.id.txtBottomMessage);
 
         imgConnStatus = findViewById(R.id.imgConnStatus);
-        // Clear background so your transparent pngs show cleanly
         imgConnStatus.setBackgroundResource(0);
 
         imgHeaderStatus = findViewById(R.id.imgHeaderStatus);
@@ -132,7 +135,6 @@ public class MainActivity extends AppCompatActivity implements MarvisAuth_Callba
             }).start();
         });
 
-        // ENROLLMENT CARD CLICK LOGIC
         cardCapture.setOnClickListener(v -> {
             if (!bioManager.isConnected()) {
                 Toast.makeText(this, "Please connect device first", Toast.LENGTH_SHORT).show();
@@ -145,7 +147,6 @@ public class MainActivity extends AppCompatActivity implements MarvisAuth_Callba
             startActivity(new Intent(MainActivity.this, EnrollmentActivity.class));
         });
 
-        // MATCH CARD CLICK LOGIC
         cardMatch.setOnClickListener(v -> {
             if (!bioManager.isConnected()) {
                 Toast.makeText(this, "Please connect device first", Toast.LENGTH_SHORT).show();
@@ -208,29 +209,25 @@ public class MainActivity extends AppCompatActivity implements MarvisAuth_Callba
 
     private void setUIConnected(boolean connected, String deviceName) {
         if (connected) {
-            // 1. Keep the small status indicator as a solid GREEN square
             imgConnStatus.setImageDrawable(null);
             imgConnStatus.setBackgroundResource(R.drawable.ic_launcher_background);
             imgConnStatus.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#22C55E")));
 
             txtConnectionStatus.setText("Connected (" + deviceName + ")");
-            txtConnectionStatus.setTextColor(Color.parseColor("#22C55E")); // Green
+            txtConnectionStatus.setTextColor(Color.parseColor("#22C55E"));
 
-            // 2. Put the dynamic eye image in the top right Header
             imgHeaderStatus.setImageResource(R.drawable.green_eye_connect);
-            imgHeaderStatus.clearColorFilter(); // Remove any leftover tint
+            imgHeaderStatus.clearColorFilter();
         } else {
-            // 1. Keep the small status indicator as a solid RED square
             imgConnStatus.setImageDrawable(null);
             imgConnStatus.setBackgroundResource(R.drawable.ic_launcher_background);
             imgConnStatus.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#EF4444")));
 
             txtConnectionStatus.setText("Disconnected");
-            txtConnectionStatus.setTextColor(Color.parseColor("#EF4444")); // Red
+            txtConnectionStatus.setTextColor(Color.parseColor("#EF4444"));
 
-            // 2. Put the dynamic eye image in the top right Header
             imgHeaderStatus.setImageResource(R.drawable.red_eye_disconnect);
-            imgHeaderStatus.clearColorFilter(); // Remove any leftover tint
+            imgHeaderStatus.clearColorFilter();
         }
 
         cardCapture.setAlpha(connected && bioManager.isReady() ? 1.0f : 0.6f);
@@ -258,17 +255,55 @@ public class MainActivity extends AppCompatActivity implements MarvisAuth_Callba
     }
 
     private void showDeleteOptionsDialog() {
+        String[] options = {"Delete local files", "Delete database", "Delete both"};
+        selectedDeleteOption = 0; // Default selection to the first item
+
         new AlertDialog.Builder(this)
-                .setTitle("Clear Database")
-                .setMessage("Are you sure you want to clear all Iris data? This cannot be undone.")
+                .setTitle("Select Data to Clear")
+                .setSingleChoiceItems(options, 0, (dialog, which) -> {
+                    selectedDeleteOption = which;
+                })
                 .setPositiveButton("DELETE", (dialog, which) -> {
-                    SQLiteDatabase db = dbHelper.getWritableDatabase();
-                    db.execSQL("DELETE FROM " + IrisDatabaseHelper.TABLE_USERS);
-                    Toast.makeText(this, "Database Cleared", Toast.LENGTH_SHORT).show();
+                    if (selectedDeleteOption == 0) {
+                        deleteAllLocalFiles();
+                        Toast.makeText(this, "Local Files Cleared", Toast.LENGTH_SHORT).show();
+                    } else if (selectedDeleteOption == 1) {
+                        clearDatabase();
+                        Toast.makeText(this, "Database Cleared", Toast.LENGTH_SHORT).show();
+                    } else if (selectedDeleteOption == 2) {
+                        deleteAllLocalFiles();
+                        clearDatabase();
+                        Toast.makeText(this, "All Data Cleared", Toast.LENGTH_SHORT).show();
+                    }
                     refreshUserCount();
                 })
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton("CANCEL", null)
                 .show();
+    }
+
+    private void clearDatabase() {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        db.execSQL("DELETE FROM " + IrisDatabaseHelper.TABLE_USERS);
+    }
+
+    private void deleteAllLocalFiles() {
+        File baseDirectory = new File(getExternalFilesDir(null), "MarvisUsers");
+        if (baseDirectory.exists() && baseDirectory.isDirectory()) {
+            deleteRecursive(baseDirectory);
+        }
+    }
+
+    // Recursively delete files and subdirectories
+    private void deleteRecursive(File fileOrDirectory) {
+        if (fileOrDirectory.isDirectory()) {
+            File[] children = fileOrDirectory.listFiles();
+            if (children != null) {
+                for (File child : children) {
+                    deleteRecursive(child);
+                }
+            }
+        }
+        fileOrDirectory.delete();
     }
 
     @Override
