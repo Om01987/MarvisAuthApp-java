@@ -58,7 +58,7 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
         btnSaveUser = findViewById(R.id.btnSaveUser);
         btnReset = findViewById(R.id.btnReset);
 
-        // Setup Paint for drawing Iris Anatomy circle
+        // drawing Iris Anatomy circle
         paint = new Paint();
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(3);
@@ -77,7 +77,7 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
                 revertImageToDefault(currentEye); // Pass the current eye before resetting it
                 resetUIState();
 
-                // Unassign current eye so it's fully reset
+                // Unassign current eye
                 currentEye = -1;
             }
         });
@@ -116,7 +116,7 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
         imgRightEye.setEnabled(false);
         btnStopCapture.setEnabled(true);
 
-        // Reset the active ImageView to a neutral color and remove old text during preview
+        // Reset the active ImageView
         if (currentEye == 0) {
             imgLeftEye.setBackgroundColor(Color.parseColor("#E2E8F0"));
             txtLeftQuality.setText("");
@@ -132,7 +132,7 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
         if (ret != 0) {
             isCapturing = false;
             updateStatus("Capture Failed to Start: " + ret, Color.RED);
-            revertImageToDefault(currentEye); // Pass eye index
+            revertImageToDefault(currentEye);
             resetUIState();
             currentEye = -1;
         }
@@ -140,7 +140,7 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
 
     @Override
     public void OnPreview(int errorCode, int quality, byte[] image, IrisAnatomy anatomy) {
-        // CRITICAL FIX: Ignore lingering frames if user clicked Stop
+
         if (!isCapturing) return;
 
         if (errorCode == 0 && image != null) {
@@ -157,7 +157,7 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
             }
 
             runOnUiThread(() -> {
-                // Target the specific image view that was clicked
+
                 if (currentEye == 0) {
                     imgLeftEye.setImageBitmap(mutableBitmap);
                 } else if (currentEye == 1) {
@@ -170,7 +170,7 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
 
     @Override
     public void OnComplete(int errorCode, int quality, byte[] image, IrisAnatomy anatomy) {
-        // CRITICAL FIX: Ignore callbacks if user manually aborted
+
         if (!isCapturing) return;
 
         isCapturing = false;
@@ -206,12 +206,12 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
             updateStatus("Capture Failed or Timeout: " + bioManager.getSDK().GetErrorMessage(errorCode), Color.RED);
             revertImageToDefault(currentEye); // Correctly revert the current eye image
             resetUIState();
-            currentEye = -1; // Safely set to -1 AFTER revertImageToDefault captures the value
+            currentEye = -1; // set to -1 AFTER revertImageToDefault captures the value
         }
     }
 
     private void extractImagesFromSDK() {
-        final int activeEye = currentEye; // Capture current eye locally for the thread
+        final int activeEye = currentEye;
 
         new Thread(() -> {
             try {
@@ -254,7 +254,7 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
         }).start();
     }
 
-    // MODIFIED: Added eyeToRevert parameter to prevent race condition with currentEye = -1
+    //  eyeToRevert parameter to prevent race condition with currentEye = -1
     private void revertImageToDefault(int eyeToRevert) {
         runOnUiThread(() -> {
             if (eyeToRevert == 0) {
@@ -309,11 +309,11 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
             return;
         }
 
-        // 1. Save to Database
+        // Save to Database
         long id = dbHelper.insertUser(name, leftImgBmp, leftImgIso, rightImgBmp, rightImgIso);
 
         if (id != -1) {
-            // 2. Save Images Locally using the newly generated unique ID
+            // Save Images Locally using the newly generated unique ID
             saveImagesLocally(id, name);
 
             Toast.makeText(this, "User Enrolled Successfully!", Toast.LENGTH_LONG).show();
@@ -323,13 +323,13 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
         }
     }
 
-    // Helper method to write the raw BMP byte arrays to local files
+
 
     private void saveImagesLocally(long userId, String userName) {
-        // 1. Define the base "MarvisUsers" directory
+        // Define the base "MarvisUsers" directory
         File baseDirectory = new File(getExternalFilesDir(null), "MarvisUsers");
 
-        // 2. Define the specific user's subfolder (e.g., "user_1")
+        // Define the specific user's subfolder (like "user_1")
         File userDirectory = new File(baseDirectory, "user_" + userId);
 
         // Create the directory path if it doesn't exist (mkdirs creates parent folders too)
@@ -337,7 +337,7 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
             userDirectory.mkdirs();
         }
 
-        // Sanitize the username to prevent file system errors (removes spaces and special chars)
+        // clean the username (removes spaces and special chars)
         String safeName = userName.replaceAll("[^a-zA-Z0-9.-]", "_");
 
         // Save Left Eye if captured

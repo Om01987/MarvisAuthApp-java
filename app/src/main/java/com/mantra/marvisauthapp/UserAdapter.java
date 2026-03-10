@@ -46,7 +46,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         holder.txtUserId.setText(String.valueOf(user.id));
         holder.txtUserName.setText(user.name);
 
-        // Map boolean to 'Y' or 'N' with specific colors
+        // Mapping boolean to 'Y' or 'N' with specific colors
         if (user.hasLeftEye) {
             holder.txtLeftEye.setText("Y");
             holder.txtLeftEye.setTextColor(Color.parseColor("#10B981")); // Green

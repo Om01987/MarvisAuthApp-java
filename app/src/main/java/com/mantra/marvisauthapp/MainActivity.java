@@ -34,7 +34,7 @@ public class MainActivity extends AppCompatActivity implements MarvisAuth_Callba
     private IrisDatabaseHelper dbHelper;
     private DeviceModel pendingModel;
 
-    private int selectedDeleteOption = 0; // Tracks dialog selection
+    private int selectedDeleteOption = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -256,7 +256,7 @@ public class MainActivity extends AppCompatActivity implements MarvisAuth_Callba
 
     private void showDeleteOptionsDialog() {
         String[] options = {"Delete local files", "Delete database", "Delete both"};
-        selectedDeleteOption = 0; // Default selection to the first item
+        selectedDeleteOption = 0; // Default selection for delete dialogue
 
         new AlertDialog.Builder(this)
                 .setTitle("Select Data to Clear")

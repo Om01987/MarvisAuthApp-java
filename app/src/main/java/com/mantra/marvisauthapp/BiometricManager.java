@@ -40,7 +40,7 @@ public class BiometricManager implements MarvisAuth_Callback {
             String logPath = context.getExternalFilesDir(null).getAbsolutePath() + "/marvis_log.txt";
             marvisAuth.SetLogProperties(logPath, LogLevel.ERROR);
 
-            // Initial poll: Catch devices plugged in before the app launched
+            // Catch devices plugged in before the app launched
             if (marvisAuth.IsDeviceConnected(DeviceModel.MIS100V2)) {
                 isDeviceConnected = true;
                 currentModel = DeviceModel.MIS100V2;

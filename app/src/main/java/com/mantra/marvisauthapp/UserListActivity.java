@@ -59,8 +59,7 @@ public class UserListActivity extends AppCompatActivity {
 
     private void loadUsers() {
         userList.clear();
-        Cursor cursor = dbHelper.getLightweightUsers(); // Use lightweight query
-
+        Cursor cursor = dbHelper.getLightweightUsers();
         if (cursor.moveToFirst()) {
             do {
                 int id = cursor.getInt(cursor.getColumnIndexOrThrow(IrisDatabaseHelper.COL_ID));

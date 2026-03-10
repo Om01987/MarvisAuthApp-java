@@ -16,7 +16,7 @@ public class IrisDatabaseHelper extends SQLiteOpenHelper {
     public static final String COL_ID = "id";
     public static final String COL_NAME = "user_name";
 
-    // We store both the display image (BMP) and the matching template (IIR_K1)
+    // store both the display image (BMP) and the matching template (IIR_K1)
     public static final String COL_LEFT_IMAGE = "left_image";
     public static final String COL_LEFT_TEMPLATE = "left_template";
     public static final String COL_RIGHT_IMAGE = "right_image";
@@ -45,7 +45,7 @@ public class IrisDatabaseHelper extends SQLiteOpenHelper {
         onCreate(db);
     }
 
-    // Helper method to insert a new user
+    // insert a new user
     public long insertUser(String name, byte[] leftImg, byte[] leftTemp, byte[] rightImg, byte[] rightTemp) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
