@@ -58,16 +58,16 @@ public class UserListActivity extends AppCompatActivity {
 
     private void loadUsers() {
         userList.clear();
-        Cursor cursor = dbHelper.getAllUsers();
+        Cursor cursor = dbHelper.getLightweightUsers(); // Use lightweight query
 
         if (cursor.moveToFirst()) {
             do {
                 int id = cursor.getInt(cursor.getColumnIndexOrThrow(IrisDatabaseHelper.COL_ID));
                 String name = cursor.getString(cursor.getColumnIndexOrThrow(IrisDatabaseHelper.COL_NAME));
 
-                // Check if templates exist (Not Null)
-                boolean hasLeft = !cursor.isNull(cursor.getColumnIndexOrThrow(IrisDatabaseHelper.COL_LEFT_TEMPLATE));
-                boolean hasRight = !cursor.isNull(cursor.getColumnIndexOrThrow(IrisDatabaseHelper.COL_RIGHT_TEMPLATE));
+                // SQLite evaluates IS NOT NULL as 1 (true) or 0 (false)
+                boolean hasLeft = cursor.getInt(cursor.getColumnIndexOrThrow("has_left")) == 1;
+                boolean hasRight = cursor.getInt(cursor.getColumnIndexOrThrow("has_right")) == 1;
 
                 userList.add(new IrisUser(id, name, hasLeft, hasRight));
             } while (cursor.moveToNext());

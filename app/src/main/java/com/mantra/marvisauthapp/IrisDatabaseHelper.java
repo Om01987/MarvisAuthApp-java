@@ -83,4 +83,15 @@ public class IrisDatabaseHelper extends SQLiteOpenHelper {
         db.close();
         return result > 0;
     }
+
+    // Fetch users without pulling heavy BLOB data into memory
+    public Cursor getLightweightUsers() {
+        SQLiteDatabase db = this.getReadableDatabase();
+        // Uses SQLite (IS NOT NULL) to return 1 (true) or 0 (false) for the blobs
+        String query = "SELECT " + COL_ID + ", " + COL_NAME + ", " +
+                "(" + COL_LEFT_TEMPLATE + " IS NOT NULL) AS has_left, " +
+                "(" + COL_RIGHT_TEMPLATE + " IS NOT NULL) AS has_right " +
+                "FROM " + TABLE_USERS + " ORDER BY " + COL_ID + " ASC";
+        return db.rawQuery(query, null);
+    }
 }

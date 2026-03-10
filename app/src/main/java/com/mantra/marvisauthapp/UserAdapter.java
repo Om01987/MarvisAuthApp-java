@@ -1,5 +1,6 @@
 package com.mantra.marvisauthapp;
 
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -42,12 +43,25 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     public void onBindViewHolder(@NonNull UserViewHolder holder, int position) {
         IrisUser user = userList.get(position);
 
+        holder.txtUserId.setText(String.valueOf(user.id));
         holder.txtUserName.setText(user.name);
-        holder.txtUserId.setText("ID: " + user.id);
 
-        String leftStatus = user.hasLeftEye ? "✅" : "❌";
-        String rightStatus = user.hasRightEye ? "✅" : "❌";
-        holder.txtEnrolledEyes.setText("Left " + leftStatus + " | Right " + rightStatus);
+        // Map boolean to 'Y' or 'N' with specific colors
+        if (user.hasLeftEye) {
+            holder.txtLeftEye.setText("Y");
+            holder.txtLeftEye.setTextColor(Color.parseColor("#10B981")); // Green
+        } else {
+            holder.txtLeftEye.setText("N");
+            holder.txtLeftEye.setTextColor(Color.parseColor("#EF4444")); // Red
+        }
+
+        if (user.hasRightEye) {
+            holder.txtRightEye.setText("Y");
+            holder.txtRightEye.setTextColor(Color.parseColor("#10B981")); // Green
+        } else {
+            holder.txtRightEye.setText("N");
+            holder.txtRightEye.setTextColor(Color.parseColor("#EF4444")); // Red
+        }
 
         holder.btnEditUser.setOnClickListener(v -> listener.onEditClick(user));
         holder.btnDeleteUser.setOnClickListener(v -> listener.onDeleteClick(user));
@@ -59,14 +73,15 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     }
 
     public static class UserViewHolder extends RecyclerView.ViewHolder {
-        TextView txtUserName, txtUserId, txtEnrolledEyes;
+        TextView txtUserName, txtUserId, txtLeftEye, txtRightEye;
         ImageView btnEditUser, btnDeleteUser;
 
         public UserViewHolder(@NonNull View itemView) {
             super(itemView);
-            txtUserName = itemView.findViewById(R.id.txtUserName);
             txtUserId = itemView.findViewById(R.id.txtUserId);
-            txtEnrolledEyes = itemView.findViewById(R.id.txtEnrolledEyes);
+            txtUserName = itemView.findViewById(R.id.txtUserName);
+            txtLeftEye = itemView.findViewById(R.id.txtLeftEye);
+            txtRightEye = itemView.findViewById(R.id.txtRightEye);
             btnEditUser = itemView.findViewById(R.id.btnEditUser);
             btnDeleteUser = itemView.findViewById(R.id.btnDeleteUser);
         }
