@@ -12,6 +12,10 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.mantra.marvisauth.IrisAnatomy;
@@ -305,12 +309,55 @@ public class EnrollmentActivity extends AppCompatActivity implements MarvisAuth_
             return;
         }
 
+        // 1. Save to Database
         long id = dbHelper.insertUser(name, leftImgBmp, leftImgIso, rightImgBmp, rightImgIso);
+
         if (id != -1) {
+            // 2. Save Images Locally using the newly generated unique ID
+            saveImagesLocally(id, name);
+
             Toast.makeText(this, "User Enrolled Successfully!", Toast.LENGTH_LONG).show();
             finish();
         } else {
             Toast.makeText(this, "Database Error", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // Helper method to write the raw BMP byte arrays to local files
+
+    private void saveImagesLocally(long userId, String userName) {
+        // 1. Define the base "MarvisUsers" directory
+        File baseDirectory = new File(getExternalFilesDir(null), "MarvisUsers");
+
+        // 2. Define the specific user's subfolder (e.g., "user_1")
+        File userDirectory = new File(baseDirectory, "user_" + userId);
+
+        // Create the directory path if it doesn't exist (mkdirs creates parent folders too)
+        if (!userDirectory.exists()) {
+            userDirectory.mkdirs();
+        }
+
+        // Sanitize the username to prevent file system errors (removes spaces and special chars)
+        String safeName = userName.replaceAll("[^a-zA-Z0-9.-]", "_");
+
+        // Save Left Eye if captured
+        if (leftImgBmp != null) {
+            File leftFile = new File(userDirectory, "ID_" + userId + "_" + safeName + "_Left.bmp");
+            try (FileOutputStream fos = new FileOutputStream(leftFile)) {
+                fos.write(leftImgBmp);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        // Save Right Eye if captured
+        if (rightImgBmp != null) {
+            File rightFile = new File(userDirectory, "ID_" + userId + "_" + safeName + "_Right.bmp");
+            try (FileOutputStream fos = new FileOutputStream(rightFile)) {
+                fos.write(rightImgBmp);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
